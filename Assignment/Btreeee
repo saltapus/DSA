@@ -1,0 +1,456 @@
+import java.io.*;
+import java.util.*;
+
+public class BTree
+{
+   /*************************************************************************
+    * Obtained from adderllyer,
+    * https://gist.github.com/adderllyer/3bfa2d04200386b5664c
+    * (Accessed on 8th May 2019)
+    * ***********************************************************************/
+
+    private class BNode
+    {
+        //CLASSFIELDS FOR BNODE
+        String [] key;//list of keys
+        Object [] value;//list of objects -going to be containing stock
+        BNode [] child;
+        BNode parent;
+        int size;
+        boolean leaf;
+        int height = 1;
+        int leftCount = 1;
+        int rightCount = 1;
+
+        public BNode(int t)//constructor
+        {
+            this.key = new String[2*t-1];//sets the size of keys to be 2 * of t
+            this.value = new Object[2*t-1];//-1
+            this.child = new BNode[2*t];//child is twice the size of t
+            this.parent = null;
+            this.leaf = true;   
+        }
+    }
+
+    private BNode root;
+    private int t = 3;//declares and intialises default degree to be 3
+    private int count;
+
+    
+    public BTree()
+    {
+    }
+
+    public BTree(int numT)
+    {
+        t = numT;
+        count = 0;
+    }
+
+    public BTree(String filename, int numT)
+    {
+        t = numT;//sets the new degree
+        count = 0;
+        fileInput(filename);
+    }
+
+    //FILE IO
+    private void fileInput(String inFileName)                                   
+    {                                                                           
+        FileInputStream fileStrm = null;                                        
+        InputStreamReader rdr;                                                  
+        BufferedReader bufRdr;                                                  
+        Scanner sc = new Scanner(System.in);                                    
+        String line;                                                            
+        try                                                                     
+        {                                                                       
+            fileStrm = new FileInputStream(inFileName);                         
+            rdr = new InputStreamReader(fileStrm);                              
+            bufRdr = new BufferedReader(rdr);                                   
+                                                                                
+            //Input line from the file                                          
+            line = bufRdr.readLine();                                           
+                                                                                
+            while(line != null)                                                 
+            {                                                                   
+                try                                                             
+                {                                                               
+                    processStock(line);                                        
+                }                                                               
+                catch (StringIndexOutOfBoundsException e)                       
+                {                                                               
+                    System.out.println("Error: String index out of bounds"      
+                                       + e.getMessage());                       
+                }                                                               
+                catch (ArrayIndexOutOfBoundsException e)                        
+                {                                                               
+                    System.out.println("Error: Array size is full"              
+                                        + e.getMessage());                      
+                }                                                               
+                catch (IllegalArgumentException e)                              
+                {                                                               
+                    System.out.println("Illegal argument -fileInput SB: " + e.getMessage());
+                }                                                               
+                line = bufRdr.readLine();                                       
+            }                                                                   
+            fileStrm.close();                                                   
+            System.out.println("File has been Read");   
+        }                        
+        catch (IOException e)                                                   
+        {                                                                       
+            if (fileStrm != null)                                               
+            {                                                                   
+                try                                                             
+                {                                                               
+                    fileStrm.close();                                           
+                }                                                               
+                catch(IOException ex2)                                          
+                {                                                               
+                }                                                               
+            }                                                                   
+            System.out.println("Error in file processing: " + e.getMessage());  
+        }                                                                       
+    }    
+
+    //processes values from csv file and constructs a object of stock
+    public void processStock(String line)
+    {
+        String tick;
+        int date, vol;
+        double open, high, low, close;
+        String [] lineArray = line.split(",");
+        tick = lineArray[0];
+        date = Integer.parseInt(lineArray[1]);                                  
+        open = Double.parseDouble(lineArray[2]);                                
+        high = Double.parseDouble(lineArray[3]);                                
+        low = Double.parseDouble(lineArray[4]);                                 
+        close = Double.parseDouble(lineArray[5]);                               
+        vol = Integer.parseInt(lineArray[6]);                                
+                                                                                
+        StocksClass stocks = new StocksClass(tick, date, open, high, low, close, 
+                                            vol);                            
+        insert(tick, stocks);
+    }
+
+    /**************************************************************************
+    * Obtained from Kevin Ponek
+    * https://github.com/kponek/AP-Computer-Science/blob/21df64e475fc2260bfb55b3a1ccb78677f098956/Desktop/COC/CS/All282project2/New%20folder/Morada/src/Tree234.java
+    * Date Accessed 20/05/2019
+    * *************************************************************************
+    * Obtained from  Navjinder Virdee 
+    * https://github.com/navjindervirdee/data-structures/blob/master/B-Tree/B-Tree%20Insert/BTree.java
+    * Date Accessed 17/05/2019
+    * *************************************************************************/
+    //wrapper method
+    public void insert(String key, Object value)                                
+    { 
+        //checks if node exists else passes key and value
+        if(root == null)
+        {
+            System.out.println("Creating Tree");
+            BNode node = new BNode(t);
+            insertData(node, value, key);
+            root = node;
+            root.height++;
+        }                                                                     
+        insertRec(key, value);          
+
+    }                                                                           
+    
+    //recursion method that adds values to tree                       
+    private void insertRec(String key, Object value)     
+    {
+        System.out.println("inserting data: \n" +key);
+        BNode temp = root;
+        while(!temp.leaf || temp.size == 2*t-1 && temp.child[0]==null)
+        {
+            if(value == null)
+            {
+                throw new IllegalArgumentException("Key " + key + "out");
+            }
+            else if (temp.size == 2*t-1)//if Full split
+            {
+                temp = splitNode(temp, value, key);
+            }
+            else if (key.compareTo(temp.key[0])<0)//if key is larger then first 
+            {                                       //sets nod to be first in
+                temp = temp.child[0];               //child adding to tree
+            }
+            else if (key.compareTo(temp.key[temp.size-1])>0)//sets the child to
+            {                                   //be temp size
+                temp = temp.child[temp.size];
+
+            }
+        //    else
+        //    {
+                for (int i = 1; i < temp.size; i++)
+                {
+                    if(key.compareTo(temp.key[i])<0)//checks if key is smaller
+                    {                               //sets node to be in pos i
+                        temp = temp.child[i];       //of child adding to tree
+                        i = temp.size;
+
+                    }
+                }
+        //    }
+        }
+
+        count++;//calculates the variables in tree
+        insertData(temp, value, key);//imports values and shuffles them in order
+    }
+    
+    //insertion sort algo, shuffles values in ascending
+    private void insertData(BNode node, Object value, String key)
+    {
+        int idx = node.size;
+        for(int i = node.size -1; i > -1; i--)
+        {
+
+            if(key.compareTo(node.key[i])<=0)
+            {
+                node.key[i+1] = node.key[i];
+                node.value[i+1] = node.value[i];
+                idx = i;
+
+            }
+            else
+            {
+                i = 0;;
+            }
+        }
+        node.value[idx] = value;
+        node.key[idx] = key;
+        node.size++;
+    }
+
+
+
+    //splits node of node is full
+    private BNode splitNode(BNode node, Object value, String key)
+    {
+        System.out.println("Splitting Node");
+        int mid = node.size/2; //finds middle index
+        BNode left = new BNode(t); //creates node to store keys/values
+        BNode right = new BNode(t);
+        BNode parent = node.parent;//sets new parent to be nodes parent
+
+        for (int i = 0; i < mid; i++)//iterates lefthand side of mid
+        {
+            left.key[i] = node.key[i];//sets left node to store the key, values
+            left.value[i] = node.value[i];//while going though child pos
+            left.child[i] = node.child[i];
+            left.size++;//increases size
+        }
+        left.child[mid] = node.child[mid];//sets left childs mid to be nodes mid
+        
+        int j = 0;
+        for (int i = mid + 1; i < node.size; i++)//iterates right hand side of mid
+        {
+            right.key[j] = node.key[i]; //sets element i in key/value node into
+            right.value[j] = node.value[i];//right node increasing size 
+            right.child[j] = node.child[i];
+            right.size++;//goes to next posistion (looks like right.key[0] = node.[4
+            j++;         //onwards until node.key[] == size of node                 
+        }
+        right.child[mid] = node.child[node.size];//sets child at middle idx to be
+                                                //set to last node in child
+
+        left.leaf = node.leaf;//sets to true
+        right.leaf = node.leaf;//sets to true
+
+        if(parent == null)
+        {
+            String tempKey = node.key[mid];//sets middle key/value to be temp
+            Object tempValue = node.value[mid];
+            node.key = new String[2*t-1];
+            node.value = new Object[2*t-1];
+            node.key[0] = tempKey;
+            node.value[0] = tempValue;
+            node.size = 1;
+            node.leaf = false;//sets to false because no child nodes
+            node.child[0] = left;
+            node.child[1] = right;
+            left.parent = node;
+            right.parent = node;
+            node.height++; 
+
+        
+            if(key.compareTo(tempKey)>0)
+            {
+
+            node.rightCount++;
+                node = right;
+            }
+            else
+            {
+            node.leftCount++;
+
+                node = left;
+            }
+
+        }
+        else
+        {
+            int idx = parent.size;
+            String data = node.key[mid];
+            value = node.value[mid];
+            for(int i = parent.size - 1; i > -1; i--)
+            {
+                if(key.compareTo(parent.key[i])<0)
+                {
+                    parent.key[i+1] = parent.key[i];
+                    parent.value[i+1] = parent.value[i];
+                    parent.child[i+2] = parent.child[i+1];
+                    idx = 1;
+                }
+                else
+                {
+                    i = 0;;
+                }
+            }
+
+            parent.key[idx] = data;
+            parent.value[idx] = value;
+
+            parent.child[idx] = left;
+            parent.child[idx+1] = right;
+            parent.size++;
+
+
+            left.parent = parent;
+            right.parent = parent;
+
+            if(key.compareTo(data)>0)
+            {
+                node = right;
+            }
+            else
+            {
+                node = left;
+            }
+        }
+        return node;
+
+    }
+    //wrapper
+    public void display()
+    {
+        recDisplay(root, 0);
+    }
+
+    //recurses through tree adding lvl to represent the lvl child is located at
+    public void recDisplay(BNode node, int lvl)
+    {
+        if (node != null)
+        {
+
+            System.out.print("level :" + lvl + " " + "Data : ");
+            for(int i = 0; i < node.size; i++)
+            {
+                System.out.print(node.key[i] + " ");
+
+            }
+            System.out.println();
+            if(node.leaf)
+            {
+            }
+            else
+            {
+            
+                for(int i = 0; i < node.size+1; i++)
+                {
+                    recDisplay(node.child[i], lvl + 1);
+
+                }    
+            }
+        }
+    }
+    
+    public void displayVal()
+    {
+        recDisplay(root, 0);
+    }
+
+    public void recDisplayVal(BNode node, int lvl)
+    {
+        if (node != null)
+        {
+
+            System.out.print("level :" + lvl + " " + "Data : ");
+            for(int i = 0; i < node.size; i++)
+            {
+                System.out.println(node.value[i] + " ");
+
+            }
+            System.out.println();
+            if(node.leaf)
+            {
+            }
+            else
+            {
+                for(int i = 0; i < node.size; i++)
+                {
+                    recDisplay(node.child[i], lvl + 1);
+
+                }    
+            }
+        }
+    }
+
+
+    public int height()
+    { 
+        return root.height;
+    }
+
+    public int size()
+    {
+        return count;
+    }
+
+    public Object find(String key)
+    {
+        return findRecursive(key, root);
+    }
+
+    private Object findRecursive(String key, BNode node)
+    {
+        Object val = null;
+        BNode temp = node; 
+        if(node == null)
+        {
+            throw new NoSuchElementException("Key " + key + " not found");//base case not found
+        }
+        else
+        {
+            int j =0;
+            for (int i = 0; i < node.size; i++)//iterates right hand
+            {
+                if(key.equals(node.key[j]))
+                {
+                    val = node.value[j];
+                }
+                else if(key.compareTo(node.key[j])<0)
+                {
+                    val = findRecursive(key, node.child[i]);
+                }
+                j++;
+            }
+        }
+        return val;
+    }
+    
+    public void delete()
+    {
+        throw new IllegalArgumentException("not yet implimented");
+    }
+    
+    public int balance() 
+    {
+        System.out.println(root.leftCount);
+        System.out.println(root.rightCount);
+        int a = root.leftCount;
+        int b = root.rightCount;        
+        return ((b-a) * 100 / a);
+    }
+}         

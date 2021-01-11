@@ -1,0 +1,77 @@
+1st one
+===============================================================================
+new{ABCDEFG}
+old{}
+T{}
+
+new{BCDEFG}
+old{A}
+L[A] = {ABCDE}
+T{}
+
+new{CDEFG}
+L[B]{A, E}
+old{AB}
+T{(AB)}
+
+new{DEFG}
+L[C]{A,D}
+old{ABC}
+T{(AB)(AC)}
+
+new{EFG}
+L[D]{ACF}
+old{ABCD}
+T{(AB)(AC)(CD)}
+
+new{FG}
+L[E]{ABFG}
+old{ABCDE}
+T{(AB)(AC)(CD)(DE)}
+
+new{G}
+L[F]{DEG}
+old{ABCDEF}
+T{(AB)(AC)(CD)(DE)
+
+new{}
+L[G]{FE}
+old{ABCDEFG}
+T{(AB)(AC)(CD)(DE)
+
+
+
+
+
+
+
+BFS
+new = {A, B, C, D, E, F, G}
+old = {}
+T {}
+
+L[A] = {B, C, D, E}
+new = {B, C, D, E}
+T{}
+
+L[B] = {A, C, D, E, F}
+new = {f}
+old = {A, B, C, D, E}
+T = {(A,B),(A,C),(A,D),(A,E)}
+
+
+L[C] = {A, D}
+new = {}
+old = {A,B,C,D,E,F}
+T = {(A,B),(A,C),(A,D),(A,E), (A,F)}
+
+L[D] = {A, C, F}
+new{f}
+old{A, B, C, D, E, F}
+T = {(A,B),(A,C),(A,D),(A,E), (A,F)}
+
+L[E] = {A, B, F, G}
+new {G}
+old{A, B, C, D, F, G}
+T = {(A,B),(A,C),(A,D),(A,E), (E,F), (E,G)}
+
